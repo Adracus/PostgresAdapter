@@ -140,9 +140,9 @@ class PostgresAdapter implements DatabaseAdapter {
     var varStatements = [];
     var keys = variables.keys.toList(growable: false);
     for (int i = 0; i < keys.length; i++) {
-      varStatements.add("@name$i" + "=" + "@value$i");
-      s.addValue("name$i", keys[i].name);
-      s.addValue("value$i", variables[keys[i]]);
+      varStatements.add("@name${i+1}" + "=" + "@value${i+1}");
+      s.addValue("name${i+1}", keys[i].name);
+      s.addValue("value${i+1}", variables[keys[i]]);
     }
     stub += " WHERE " + varStatements.join(" AND ");
     if (limit != null) stub += " LIMIT $limit";
