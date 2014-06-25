@@ -136,14 +136,15 @@ class PostgresAdapter implements DatabaseAdapter {
     Map<Variable, dynamic> variables, int limit, int offset) {
     var s = new Statement();
     var stub = "SELECT * FROM ${schema.tableName}";
-    if (variables.length == 0) return s..sql = stub;
-    var varStatements = [];
-    var keys = variables.keys.toList(growable: false);
-    for (int i = 0; i < keys.length; i++) {
-      varStatements.add(keys[i].name + "=" + "@value${i+1}");
-      s.addValue("value${i+1}", variables[keys[i]]);
+    if (variables.length > 0) {
+      var varStatements = [];
+      var keys = variables.keys.toList(growable: false);
+      for (int i = 0; i < keys.length; i++) {
+        varStatements.add(keys[i].name + "=" + "@value${i+1}");
+        s.addValue("value${i+1}", variables[keys[i]]);
+      }
+      stub += " WHERE " + varStatements.join(" AND ");
     }
-    stub += " WHERE " + varStatements.join(" AND ");
     if (limit != null) stub += " LIMIT $limit";
     if (offset!= null) stub += " OFFSET $offset";
     return s..sql = stub;
