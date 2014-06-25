@@ -1,0 +1,12 @@
+name: postgres_adapter
+version: 0.0.1
+author: Axel Christ <adracus@gmail.com>
+description: A pub package
+homepage: https://github.com/Adracus/PostgresAdapter
+dependencies:
+  activerecord: ">=1.4.4 <2.0.0"
+  logging: '>=0.9.1+1 <0.10.0'
+  postgresql: '>=0.2.13 <0.3.0'
+dev_dependencies:
+  args: any
+  unittest: any
