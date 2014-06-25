@@ -140,8 +140,7 @@ class PostgresAdapter implements DatabaseAdapter {
     var varStatements = [];
     var keys = variables.keys.toList(growable: false);
     for (int i = 0; i < keys.length; i++) {
-      varStatements.add("@name${i+1}" + "=" + "@value${i+1}");
-      s.addValue("name${i+1}", keys[i].name);
+      varStatements.add(keys[i].name + "=" + "@value${i+1}");
       s.addValue("value${i+1}", variables[keys[i]]);
     }
     stub += " WHERE " + varStatements.join(" AND ");

@@ -19,15 +19,13 @@ main() {
   test("Test findModelsByVariable statement generation", () {
     var s = p.buildFindModelsByVariablesStatement(c.schema,
         {new Variable("myvar"): "myvalue"}, null, null);
-    expect(s.sql, equals("SELECT * FROM MyCollection WHERE @name0=@value0"));
+    expect(s.sql, equals("SELECT * FROM MyCollection WHERE myvar=@value1"));
     s = p.buildFindModelsByVariablesStatement(c.schema,
         {new Variable("myvar"): "myvalue", new Variable("another") : "aval"},
         1, null);
-    expect(s.sql, equals("SELECT * FROM MyCollection WHERE @name0=@value0 " +
-                         "AND @name1=@value1 LIMIT 1"));
+    expect(s.sql, equals("SELECT * FROM MyCollection WHERE myvar=@value1 " +
+                         "AND another=@value2 LIMIT 1"));
     expect(s.values.containsValue("aval"), isTrue);
     expect(s.values.containsValue("myvalue"), isTrue);
-    expect(s.values.containsValue("myvar"), isTrue);
-    expect(s.values.containsValue("another"), isTrue);
   });
 }
