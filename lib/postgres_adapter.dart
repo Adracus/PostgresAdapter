@@ -52,17 +52,25 @@ class PostgresAdapter implements DatabaseAdapter {
     });
   }
   
-  Future<List<Model>> modelsWhere(Collection c, String sql, List params, int limit, int offset) {
-    return connect(_uri).then((conn) {
-      log.info("Executing: ${buildSelectModelStatement(c.schema, sql, params, limit, offset).sql}");
-      Statement s = buildSelectModelStatement(c.schema, sql, params, limit, offset);
-      return conn.query(s.sql, s.values).toList()
-      .then((rows) {
-        var models = [];
-        rows.forEach((row) => models.add(updateModelWithRow(row, c.nu)));
-        return models;
-      })
-      .whenComplete(() => conn.close());
+  Future<List<Model>> findModelsByVariables(Collection c,
+        Map<Variable, dynamic> variables, {int limit, int offset}) {
+    return statementQuery(
+        buildFindModelsByVariablesStatement(c.schema, variables, limit, offset))
+            .then((rows) {
+      var models = [];
+      rows.forEach((row) => models.add(updateModelWithRow(row, c.nu)));
+      return models;
+    });
+  }
+  
+  Future<List<Model>> modelsWhere(Collection c, String sql,
+      List params, {int limit, int offset}) {
+    return statementQuery(buildSelectModelStatement(c.schema,
+      sql, params, limit, offset))
+        .then((rows) {
+      var models = [];
+      rows.forEach((row) => models.add(updateModelWithRow(row, c.nu)));
+      return models;
     });
   }
   
@@ -122,6 +130,24 @@ class PostgresAdapter implements DatabaseAdapter {
     s.addValue("id", m["id"]);
     s.sql = "UPDATE ${schema.tableName} SET ${upd.join(',')} WHERE id=@id;";
     return s;
+  }
+  
+  Statement buildFindModelsByVariablesStatement(Schema schema, 
+    Map<Variable, dynamic> variables, int limit, int offset) {
+    var s = new Statement();
+    var stub = "SELECT * FROM ${schema.tableName}";
+    if (variables.length == 0) return s..sql = stub;
+    var varStatements = [];
+    var keys = variables.keys.toList(growable: false);
+    for (int i = 0; i < keys.length; i++) {
+      varStatements.add("@name$i" + "=" + "@value$i");
+      s.addValue("name$i", keys[i].name);
+      s.addValue("value$i", variables[keys[i]]);
+    }
+    stub += " WHERE " + varStatements.join(" AND ");
+    if (limit != null) stub += " LIMIT $limit";
+    if (offset!= null) stub += " OFFSET $offset";
+    return s..sql = stub;
   }
   
   Statement buildSelectModelStatement(Schema schema, String sql, List args, int limit, int offset) {
