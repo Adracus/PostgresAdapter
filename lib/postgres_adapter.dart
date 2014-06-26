@@ -1,12 +1,18 @@
 library postgresadapter;
 import 'dart:async';
+import 'package:activemigration/activemigration.dart';
 import 'package:activerecord/activerecord.dart';
 import 'package:postgresql/postgresql.dart';
 
 class PostgresAdapter implements DatabaseAdapter {
   String _uri;
   
-  PostgresAdapter(this._uri);
+  PostgresAdapter(Configuration config) {
+    _uri = "postgres://" + config["username"] + ":" + config["password"] +
+        "@" + config["host"] + ":" + config["port"] + "/" + config["database"];
+  }
+  
+  PostgresAdapter.fromUri(this._uri);
   
   Future statementExec(Statement s) =>
       connect(_uri).then((conn) {
