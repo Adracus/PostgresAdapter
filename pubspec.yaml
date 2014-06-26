@@ -6,7 +6,7 @@ homepage: https://github.com/Adracus/PostgresAdapter
 dependencies:
   activerecord:
     git: https://github.com/Adracus/ActiveRecord.git
-    version: '>=2.0.3 <3.0.0'
+    version: any
   logging: '>=0.9.1+1 <0.10.0'
   postgresql: '>=0.2.13 <0.3.0'
 dev_dependencies:
