@@ -7,7 +7,7 @@ class MyCollection extends Collection {
 }
 
 main() {
-  var p = new PostgresAdapter("url");
+  var p = new PostgresAdapter.fromUri("url");
   var c = new MyCollection();
   
   test("Test drop table statement generation", () {
