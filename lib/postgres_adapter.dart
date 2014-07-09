@@ -1,7 +1,6 @@
 library postgresadapter;
 import 'dart:async';
-import 'package:activemigration/activemigration.dart';
-import 'package:activerecord/activerecord.dart' as ar;
+import 'package:activerecord/activerecord.dart';
 import 'package:postgresql/postgresql.dart';
 
 class PostgresAdapter extends DatabaseAdapter {
@@ -16,13 +15,13 @@ class PostgresAdapter extends DatabaseAdapter {
   
   Future statementExec(Statement s) =>
       connect(_uri).then((conn) {
-        ar.log.info("Executing: ${s.sql}");
+        log.info("Executing: ${s.sql}");
         return conn.execute(s.sql, s.values).whenComplete(() => conn.close());
       });
   
   Future statementQuery(Statement s) =>
       connect(_uri).then((conn) {
-        ar.log.info("Executing: ${s.sql}");
+        log.info("Executing: ${s.sql}");
         return conn.query(s.sql, s.values).toList().whenComplete(() =>
             conn.close());
       });
@@ -30,36 +29,36 @@ class PostgresAdapter extends DatabaseAdapter {
   Future<bool> boolStatementExec(Statement s) =>
         statementExec(s).then((_) => true);
   
-  Future<bool> createTable(ar.Schema schema) =>
+  Future<bool> createTable(Schema schema) =>
       boolStatementExec(buildCreateTableStatement(schema));
   
   Future<bool> dropTable(String tableName) =>
       boolStatementExec(buildDropTableStatement(tableName));
   
-  Future<bool> addColumnToTable(String tableName, ar.Variable variable) =>
+  Future<bool> addColumnToTable(String tableName, Variable variable) =>
       boolStatementExec(buildAddColumnStatement(tableName, variable));
   
   Future<bool> removeColumnFromTable(String tableName, String variableName) =>
       boolStatementExec(buildRemoveColumnStatement(tableName, variableName));
   
-  Future<bool> destroyModel(ar.Model m) =>
+  Future<bool> destroyModel(Model m) =>
       boolStatementExec(buildDestroyModelStatement(m));
   
-  Future<ar.Model> saveModel(ar.Schema schema, ar.Model m) {
+  Future<Model> saveModel(Schema schema, Model m) {
     return statementQuery(buildSaveModelStatement(m)).then((rows) {
       rows.forEach((row) => updateModelWithRow(row, m));
       return m;
     });
   }
   
-  Future<ar.Model> updateModel(ar.Schema schema, ar.Model m) {
+  Future<Model> updateModel(Schema schema, Model m) {
     return statementQuery(buildUpdateModelStatement(m)).then((rows) {
       return m;
     });
   }
   
-  Future<List<ar.Model>> findModelsByVariables(ar.Collection c,
-        Map<ar.Variable, dynamic> variables, {int limit, int offset}) {
+  Future<List<Model>> findModelsByVariables(Collection c,
+        Map<Variable, dynamic> variables, {int limit, int offset}) {
     return statementQuery(
         buildFindModelsByVariablesStatement(c.schema, variables, limit, offset))
             .then((rows) {
@@ -69,7 +68,7 @@ class PostgresAdapter extends DatabaseAdapter {
     });
   }
   
-  Future<List<ar.Model>> modelsWhere(ar.Collection c, String sql,
+  Future<List<Model>> modelsWhere(Collection c, String sql,
       List params, {int limit, int offset}) {
     return statementQuery(buildSelectModelStatement(c.schema,
       sql, params, limit, offset))
@@ -80,55 +79,55 @@ class PostgresAdapter extends DatabaseAdapter {
     });
   }
   
-  ar.Model updateModelWithRow(r, ar.Model empty) {
+  Model updateModelWithRow(r, Model empty) {
     r.forEach((String name, val) => empty[name] = val);
     return empty;
   }
   
-  String getPostgresType(ar.VariableType v) {
+  String getPostgresType(VariableType v) {
     switch(v) {
-      case ar.VariableType.BOOL:
+      case VariableType.BOOL:
         return "boolean";
-      case ar.VariableType.INT:
+      case VariableType.INT:
         return "int8";
-      case ar.VariableType.DOUBLE:
+      case VariableType.DOUBLE:
         return "float8";
-      case ar.VariableType.STRING:
+      case VariableType.STRING:
         return "varchar(255)";
-      case ar.VariableType.DATETIME:
+      case VariableType.DATETIME:
         return "timestamp";
       default:
         return "varchar(255)";
     }
   }
   
-  String getPgConstraint(ar.Constraint c) {
+  String getPgConstraint(Constraint c) {
     switch (c.name) {
       case "AUTO INCREMENT": return "SERIAL";
       default: return c.name;
     }
   }
   
-  String getVariableForCreate(ar.Variable v) {
-    if (v == ar.Variable.ID_FIELD) return "id serial PRIMARY KEY";
+  String getVariableForCreate(Variable v) {
+    if (v == Variable.ID_FIELD) return "id serial PRIMARY KEY";
     var stmnt = "${v.name} ${getPostgresType(v.type)}";
     v.constraints.forEach((c) => stmnt += " ${getPgConstraint(c)}");
     return stmnt;
   }
   
-  Statement buildCreateTableStatement(ar.Schema schema) {
+  Statement buildCreateTableStatement(Schema schema) {
     var lst = [];
     schema.variables.forEach((v) => lst.add(getVariableForCreate(v)));
     var st = "CREATE TABLE IF NOT EXISTS ${schema.tableName} (${lst.join(',')});";
     return new Statement()..sql = st;
   }
   
-  Statement buildUpdateModelStatement(ar.Model m) {
+  Statement buildUpdateModelStatement(Model m) {
     var schema = m.parent.schema;
     var upd = [];
     var s = new Statement();
-    for (ar.Variable v in schema.variables) {
-      if (v != ar.Variable.ID_FIELD && m[v.name] != null) {
+    for (Variable v in schema.variables) {
+      if (v != Variable.ID_FIELD && m[v.name] != null) {
         upd.add("${v.name}=@${v.name}");
         s.addValue(v.name, m[v.name]);
       }
@@ -138,8 +137,8 @@ class PostgresAdapter extends DatabaseAdapter {
     return s;
   }
   
-  Statement buildFindModelsByVariablesStatement(ar.Schema schema, 
-    Map<ar.Variable, dynamic> variables, int limit, int offset) {
+  Statement buildFindModelsByVariablesStatement(Schema schema, 
+    Map<Variable, dynamic> variables, int limit, int offset) {
     var s = new Statement();
     var stub = "SELECT * FROM ${schema.tableName}";
     if (variables.length > 0) {
@@ -156,7 +155,7 @@ class PostgresAdapter extends DatabaseAdapter {
     return s..sql = stub;
   }
   
-  Statement buildSelectModelStatement(ar.Schema schema, String sql, List args, int limit, int offset) {
+  Statement buildSelectModelStatement(Schema schema, String sql, List args, int limit, int offset) {
     var s = new Statement();
     var stmnt = "SELECT * FROM ${schema.tableName} ";
     if (sql!= null && sql.length > 0) {
@@ -182,7 +181,7 @@ class PostgresAdapter extends DatabaseAdapter {
     });
   }
   
-  Statement buildDestroyModelStatement(ar.Model m) {
+  Statement buildDestroyModelStatement(Model m) {
     var s = new Statement();
     s.sql = "DELETE FROM ${m.parent.schema.tableName} WHERE id = @id";
     s.addValue("id", m["id"]);
@@ -197,7 +196,7 @@ class PostgresAdapter extends DatabaseAdapter {
     return s;
   }
   
-  Statement buildAddColumnStatement(String tableName, ar.Variable variable) {
+  Statement buildAddColumnStatement(String tableName, Variable variable) {
     var s = new Statement();
     s.sql = "ALTER TABLE @tableName ADD COLUMN ${getVariableForCreate(variable)}";
     s.addValue("tableName", tableName);
@@ -210,7 +209,7 @@ class PostgresAdapter extends DatabaseAdapter {
       ..addValue("tableName", tableName);
   }
   
-  Statement buildSaveModelStatement(ar.Model m) {
+  Statement buildSaveModelStatement(Model m) {
     var schema = m.parent.schema;
     var insertNames = [];
     var values = [];
